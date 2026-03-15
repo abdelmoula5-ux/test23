@@ -1,0 +1,172 @@
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Plus, Trash2, Loader2 } from 'lucide-react';
+
+export default function CreatePoll() {
+  const navigate = useNavigate();
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [options, setOptions] = useState(['', '']);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleAddOption = () => {
+    setOptions([...options, '']);
+  };
+
+  const handleRemoveOption = (index: number) => {
+    if (options.length <= 2) return;
+    const newOptions = [...options];
+    newOptions.splice(index, 1);
+    setOptions(newOptions);
+  };
+
+  const handleOptionChange = (index: number, value: string) => {
+    const newOptions = [...options];
+    newOptions[index] = value;
+    setOptions(newOptions);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    
+    const validOptions = options.filter(opt => opt.trim() !== '');
+    if (!title.trim()) {
+      setError('Le titre est requis.');
+      return;
+    }
+    if (validOptions.length < 2) {
+      setError('Veuillez fournir au moins 2 options valides.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await fetch('/api/polls', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, description, options: validOptions }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Erreur lors de la création du sondage');
+      }
+
+      const data = await response.json();
+      navigate(`/poll/${data.id}`);
+    } catch (err: any) {
+      setError(err.message || 'Une erreur est survenue.');
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="max-w-2xl mx-auto">
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        <div className="px-6 py-8 sm:p-10">
+          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Créer un sondage</h1>
+          <p className="mt-2 text-sm text-slate-500">
+            Configurez votre sondage et partagez-le pour obtenir des résultats en temps réel.
+          </p>
+
+          <form onSubmit={handleSubmit} className="mt-8 space-y-6">
+            {error && (
+              <div className="bg-red-50 text-red-700 p-4 rounded-lg text-sm border border-red-200">
+                {error}
+              </div>
+            )}
+
+            <div>
+              <label htmlFor="title" className="block text-sm font-medium text-slate-700">
+                Question / Titre *
+              </label>
+              <div className="mt-1">
+                <input
+                  type="text"
+                  id="title"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  className="block w-full rounded-lg border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm px-4 py-2 border"
+                  placeholder="Ex: Quel est votre framework préféré ?"
+                  required
+                />
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="description" className="block text-sm font-medium text-slate-700">
+                Description (optionnel)
+              </label>
+              <div className="mt-1">
+                <textarea
+                  id="description"
+                  rows={3}
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  className="block w-full rounded-lg border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm px-4 py-2 border"
+                  placeholder="Ajoutez du contexte à votre question..."
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Options de réponse *
+              </label>
+              <div className="space-y-3">
+                {options.map((option, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={option}
+                      onChange={(e) => handleOptionChange(index, e.target.value)}
+                      className="block w-full rounded-lg border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm px-4 py-2 border"
+                      placeholder={`Option ${index + 1}`}
+                      required={index < 2}
+                    />
+                    {options.length > 2 && (
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveOption(index)}
+                        className="p-2 text-slate-400 hover:text-red-500 transition-colors"
+                        title="Supprimer l'option"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={handleAddOption}
+                className="mt-3 inline-flex items-center text-sm font-medium text-indigo-600 hover:text-indigo-500"
+              >
+                <Plus className="w-4 h-4 mr-1" />
+                Ajouter une option
+              </button>
+            </div>
+
+            <div className="pt-4 border-t border-slate-200 flex justify-end">
+              <button
+                type="submit"
+                disabled={loading}
+                className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-xl shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                    Création...
+                  </>
+                ) : (
+                  'Créer le sondage'
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+}

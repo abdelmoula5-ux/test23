@@ -1,0 +1,5 @@
+{
+  "name": "Quiz & Sondages en Temps Réel",
+  "description": "Application de sondage et quiz en ligne avec résultats en temps réel, base de données SQL et graphiques dynamiques.",
+  "requestFramePermissions": []
+}
